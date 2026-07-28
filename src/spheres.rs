@@ -1,7 +1,7 @@
-use vectors::*;
-use ray::*;
-use hits::*;
-use intervals::*;
+use crate::vectors::*;
+use crate::ray::*;
+use crate::hits::*;
+use crate::intervals::*;
 
 pub struct Sphere {
     center: Point3,

@@ -1,6 +1,6 @@
-use vectors::*;
-use ray::*;
-use intervals::*;
+use crate::vectors::*;
+use crate::ray::*;
+use crate::intervals::*;
 
 pub trait Hittable {
     fn hit(&self, r: &Ray, ray_t: Interval, rec: &mut HitRecord) -> bool;

@@ -6,10 +6,10 @@ mod spheres;
 mod rtweekend;
 mod intervals;
 mod camera;
-use vectors::*;
-use hits::*;
-use spheres::*;
-use camera::*;
+use crate::vectors::*;
+use crate::hits::*;
+use crate::spheres::*;
+use crate::camera::*;
 
 fn main() {
     // World
@@ -22,6 +22,7 @@ fn main() {
     let mut cam: Camera = Camera::defaults();
     cam.aspect_ratio = 16.0 / 9.0;
     cam.image_width = 400; 
+    cam.samples_per_pixel = 100;
 
     cam.render(&world);
 }

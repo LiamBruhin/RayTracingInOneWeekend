@@ -1,3 +1,4 @@
 @echo off
-rustc main.rs
-main.exe > image.ppm && image.ppm
+REM rustc main.rs
+cargo build
+target\debug\TracingRaysInOneWeekend.exe > image.ppm && image.ppm
