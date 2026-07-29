@@ -9,6 +9,8 @@ mod camera;
 mod material;
 use crate::color::Color;
 use crate::material::Material;
+use crate::rtweekend::random_f64;
+use crate::rtweekend::random_f64_range;
 use crate::vectors::*;
 use crate::hits::*;
 use crate::spheres::*;
@@ -20,17 +22,42 @@ fn main() {
     // World
     let mut world: HittableList<Sphere> = HittableList::new();
 
-    let material_ground: Material = Material::Lambertian(Color::new(0.8, 0.8, 0.0));
-    let material_center : Material = Material::Lambertian(Color::new(0.1, 0.2, 0.5));
-    let material_left : Material = Material::Dialectric(1.50);
-    let material_bubble: Material = Material::Dialectric(1.00 / 1.50);
-    let material_right : Material = Material::Metal(Color::new(0.8, 0.6, 0.2), 1.0);
+    let ground_material = Material::Lambertian(Color::new(0.5, 0.5, 0.5));
+    world.add(Sphere::new(Point3::new(0.0, -1000.0, 0.0), 1000.0, ground_material));
 
-    world.add(Sphere::new(Point3::new(0.0, -100.5, -1.0), 100.0, material_ground));
-    world.add(Sphere::new(Point3::new(0.0, 0.0, -1.2), 0.5, material_center));
-    world.add(Sphere::new(Point3::new(-1.0, 0.0, -1.0), 0.5, material_left));
-    world.add(Sphere::new(Point3::new(-1.0, 0.0, -1.0), 0.4, material_bubble));
-    world.add(Sphere::new(Point3::new(1.0, 0.0, -1.0), 0.5, material_right));
+    for a in -11..11 {
+        for b in -11..11 {
+            let choose_mat = random_f64();
+            let center = Point3::new(a as f64 + 0.9*random_f64(), 0.2, b as f64 + 0.9*random_f64());
+
+            if (center - Point3::new(4.0, 0.2, 0.0)).length() > 0.9 {
+                let sphere_material = if choose_mat < 0.8 {
+                    // diffuse
+                    let albedo = Color::random() * Color::random();
+                    Material::Lambertian(albedo)
+                } else if choose_mat < 0.95 {
+                    // Metal
+                    let albedo = Color::random_range(0.5, 1.0);
+                    let fuzz = random_f64_range(0.0, 0.5);
+                    Material::Metal(albedo, fuzz)
+                } else {
+                    // Glass
+                    Material::Dialectric(1.5)
+                };
+
+                world.add(Sphere::new(center, 0.2, sphere_material));
+            }
+        }
+    }
+
+    let material1 = Material::Dialectric(1.5);
+    world.add(Sphere::new(Point3::new(0.0, 1.0, 0.0), 1.0, material1));
+
+    let material2 = Material::Lambertian(Color::new(0.4, 0.2, 0.1));
+    world.add(Sphere::new(Point3::new(-4.0, 1.0, 0.0), 1.0, material2));
+
+    let material3 = Material::Metal(Color::new(0.7, 0.6, 0.5), 0.0);
+    world.add(Sphere::new(Point3::new(4.0, 1.0, 0.0), 1.0, material3));
 
     // Camera
     let mut cam: Camera = Camera::defaults();
@@ -41,12 +68,12 @@ fn main() {
     cam.max_depth = 50;
 
     cam.vfov = 20.0;
-    cam.lookfrom = Point3::new(-2.0, 2.0, 1.0);
-    cam.lookat = Point3::new(0.0, 0.0, -1.0);
+    cam.lookfrom = Point3::new(13.0, 2.0, 3.0);
+    cam.lookat = Point3::new(0.0, 0.0, 0.0);
     cam.vup = Point3::new(0.0, 1.0, 0.0);
 
-    cam.defocus_angle = 10.0;
-    cam.focus_dist = 3.4;
+    cam.defocus_angle = 0.6;
+    cam.focus_dist = 10.0;
 
     cam.render(&world);
 }
