@@ -9,7 +9,6 @@ mod camera;
 mod material;
 use crate::color::Color;
 use crate::material::Material;
-use crate::rtweekend::PI;
 use crate::vectors::*;
 use crate::hits::*;
 use crate::spheres::*;
@@ -45,6 +44,9 @@ fn main() {
     cam.lookfrom = Point3::new(-2.0, 2.0, 1.0);
     cam.lookat = Point3::new(0.0, 0.0, -1.0);
     cam.vup = Point3::new(0.0, 1.0, 0.0);
+
+    cam.defocus_angle = 10.0;
+    cam.focus_dist = 3.4;
 
     cam.render(&world);
 }
