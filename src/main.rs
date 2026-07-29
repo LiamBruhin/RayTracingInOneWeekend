@@ -9,25 +9,30 @@ mod camera;
 mod material;
 use crate::color::Color;
 use crate::material::Material;
+use crate::rtweekend::PI;
 use crate::vectors::*;
 use crate::hits::*;
 use crate::spheres::*;
 use crate::camera::*;
 
 fn main() {
+    // TODO: write directly to a file rather than stdout
+
     // World
     let mut world: HittableList<Sphere> = HittableList::new();
 
     let material_ground: Material = Material::Lambertian(Color::new(0.8, 0.8, 0.0));
     let material_center : Material = Material::Lambertian(Color::new(0.1, 0.2, 0.5));
-    let material_left : Material = Material::Metal(Color::new(0.8, 0.8, 0.8), 0.3);
+    let material_left : Material = Material::Dialectric(1.50);
+    let material_bubble: Material = Material::Dialectric(1.00 / 1.50);
     let material_right : Material = Material::Metal(Color::new(0.8, 0.6, 0.2), 1.0);
 
     world.add(Sphere::new(Point3::new(0.0, -100.5, -1.0), 100.0, material_ground));
     world.add(Sphere::new(Point3::new(0.0, 0.0, -1.2), 0.5, material_center));
     world.add(Sphere::new(Point3::new(-1.0, 0.0, -1.0), 0.5, material_left));
+    world.add(Sphere::new(Point3::new(-1.0, 0.0, -1.0), 0.4, material_bubble));
     world.add(Sphere::new(Point3::new(1.0, 0.0, -1.0), 0.5, material_right));
-    
+
     // Camera
     let mut cam: Camera = Camera::defaults();
 
@@ -35,6 +40,11 @@ fn main() {
     cam.image_width = 400; 
     cam.samples_per_pixel = 100;
     cam.max_depth = 50;
+
+    cam.vfov = 20.0;
+    cam.lookfrom = Point3::new(-2.0, 2.0, 1.0);
+    cam.lookat = Point3::new(0.0, 0.0, -1.0);
+    cam.vup = Point3::new(0.0, 1.0, 0.0);
 
     cam.render(&world);
 }
