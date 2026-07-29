@@ -9,6 +9,7 @@ pub struct Camera {
     pub aspect_ratio: f64,
     pub image_width: i32,
     pub samples_per_pixel: i32,
+    pub max_depth: i32,
 
     image_height: i32,          // Rendered image height
     pixel_samples_scale: f64,   // Color scale factor for a sum of pixel samples
@@ -24,6 +25,7 @@ impl Camera {
             aspect_ratio: 1.0,
             image_width: 100,
             samples_per_pixel: 10,
+            max_depth: 10,
             image_height: 0,
             pixel_samples_scale: 0.0,
             center: Point3::zero(),
@@ -44,7 +46,7 @@ impl Camera {
                 let mut pixel_color = Color::zero();
                 for sample in 0..self.samples_per_pixel {
                     let r: Ray = self.get_ray(i, j);
-                    pixel_color += self.ray_color(&r, world);
+                    pixel_color += self.ray_color(&r, self.max_depth, world);
                 }
                 write_color(self.pixel_samples_scale * pixel_color);
             }
@@ -100,15 +102,21 @@ impl Camera {
         Vec3::new(random_f64() - 0.5, random_f64() + 0.5, 0.0)
     }
 
-    fn ray_color(&self, r: &Ray, world: &impl Hittable) -> Color {
+    fn ray_color(&self, r: &Ray, depth: i32, world: &impl Hittable) -> Color {
+        // If we've exceeded the ray bounce limit, no more light is gathered.
+        if depth <= 0 {
+            return Color::zero();
+        }
+
         let mut rec: HitRecord = HitRecord::new(); 
 
-        if world.hit(r, Interval::new(0.0, INFINITY), &mut rec) {
-            return 0.5 * (rec.normal + Color::new(1.0, 1.0, 1.0));
+        if world.hit(r, Interval::new(0.001, INFINITY), &mut rec) {
+            let direction = Vec3::random_on_hemisphere(&rec.normal);
+            return 0.5 * self.ray_color(&Ray::new(rec.p, direction), depth-1, world);
         }
 
         let unit_direction: Vec3 = r.direction().unit_vector();
         let a = 0.5*(unit_direction.y() + 1.0);
-        return (1.0-a)*Color::new(1.0, 1.0, 1.0) + a*Color::new(0.5, 0.7, 1.0);
+        (1.0-a)*Color::new(1.0, 1.0, 1.0) + a*Color::new(0.5, 0.7, 1.0)
     }
 }
