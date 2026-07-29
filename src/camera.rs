@@ -44,7 +44,7 @@ impl Camera {
             eprint!("\rScanlines remaining: {scanline} ");
             for i in 0..self.image_width {
                 let mut pixel_color = Color::zero();
-                for sample in 0..self.samples_per_pixel {
+                for _sample in 0..self.samples_per_pixel {
                     let r: Ray = self.get_ray(i, j);
                     pixel_color += self.ray_color(&r, self.max_depth, world);
                 }
@@ -111,7 +111,7 @@ impl Camera {
         let mut rec: HitRecord = HitRecord::new(); 
 
         if world.hit(r, Interval::new(0.001, INFINITY), &mut rec) {
-            let direction = Vec3::random_on_hemisphere(&rec.normal);
+            let direction = rec.normal + Vec3::random_unit_vector();
             return 0.5 * self.ray_color(&Ray::new(rec.p, direction), depth-1, world);
         }
 
