@@ -1,6 +1,7 @@
 use crate::vectors::*;
 use crate::ray::*;
 use crate::intervals::*;
+use crate::material::*;
 
 pub trait Hittable {
     fn hit(&self, r: &Ray, ray_t: Interval, rec: &mut HitRecord) -> bool;
@@ -9,13 +10,19 @@ pub trait Hittable {
 pub struct HitRecord{
     pub p: Point3,
     pub normal: Vec3,
+    pub mat: Material,
     pub t: f64,
     pub front_face: bool,
 }
 
 impl HitRecord{
     pub fn new() -> HitRecord {
-        HitRecord { p: Point3::zero(), normal: Vec3::zero(), t: 0.0, front_face: false }
+        HitRecord { 
+            p: Point3::zero(),
+            normal: Vec3::zero(),
+            mat: Material::None,
+            t: 0.0,
+            front_face: false }
     }
     pub fn set_face_normal(&mut self, r: &Ray, outward_normal: Vec3) {
         // Sets the hit record normal vector.
@@ -56,6 +63,7 @@ impl<T: Hittable> Hittable for HittableList<T> {
                 rec.p = temp_rec.p;
                 rec.normal = temp_rec.normal;
                 rec.t = temp_rec.t;
+                rec.mat = temp_rec.mat;
                 rec.front_face = temp_rec.front_face;
             }
         }
