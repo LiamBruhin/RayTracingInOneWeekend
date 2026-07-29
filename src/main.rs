@@ -20,8 +20,8 @@ fn main() {
 
     let material_ground: Material = Material::Lambertian(Color::new(0.8, 0.8, 0.0));
     let material_center : Material = Material::Lambertian(Color::new(0.1, 0.2, 0.5));
-    let material_left : Material = Material::Metal(Color::new(0.8, 0.8, 0.8));
-    let material_right : Material = Material::Metal(Color::new(0.8, 0.6, 0.2));
+    let material_left : Material = Material::Metal(Color::new(0.8, 0.8, 0.8), 0.3);
+    let material_right : Material = Material::Metal(Color::new(0.8, 0.6, 0.2), 1.0);
 
     world.add(Sphere::new(Point3::new(0.0, -100.5, -1.0), 100.0, material_ground));
     world.add(Sphere::new(Point3::new(0.0, 0.0, -1.2), 0.5, material_center));

@@ -8,7 +8,7 @@ pub enum Material {
     None,
     // Diffuse,
     Lambertian(Color),
-    Metal(Color),
+    Metal(Color, f64),
 }
 
 impl Material {
@@ -25,11 +25,13 @@ impl Material {
                 *attenuation = *albedo;
                 true
             }
-            Material::Metal(albedo) => {
-                let reflected: Vec3 = Vec3::reflect(&r_in.direction(), &rec.normal);
+            Material::Metal(albedo, fuzz) => {
+                let normal_fuzz = if *fuzz < 1.0 { *fuzz } else { 1.0 };
+                let mut reflected: Vec3 = Vec3::reflect(&r_in.direction(), &rec.normal);
+                reflected = reflected.unit_vector() + (normal_fuzz * Vec3::random_unit_vector());
                 *scattered = Ray::new(rec.p, reflected);
                 *attenuation = *albedo;
-                true
+                scattered.direction().dot(rec.normal) > 0.0
             }
             _ => false,
         }
