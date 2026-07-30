@@ -6,10 +6,12 @@ pub struct Interval {
 }
 
 impl Interval {
+    #[allow(dead_code)]
     pub fn empty() -> Interval {
         Interval { min: INFINITY, max: -INFINITY }
     }
 
+    #[allow(dead_code)]
     pub fn universe() -> Interval {
         Interval { min: -INFINITY, max: INFINITY }
     }
@@ -18,10 +20,12 @@ impl Interval {
         Interval { min: min, max: max }
     }
 
+    #[allow(dead_code)]
     pub fn size(&self) -> f64 {
         self.max - self.min
     }
 
+    #[allow(dead_code)]
     pub fn contains(&self, x: f64) -> bool {
         return self.min <= x && x <= self.max;
     }

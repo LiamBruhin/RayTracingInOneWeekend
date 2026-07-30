@@ -1,3 +1,9 @@
+use std::collections::VecDeque;
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::sync::mpsc;
+use std::thread;
+
 use crate::rtweekend::*;
 use crate::vectors::*;
 use crate::color::*;
@@ -6,6 +12,8 @@ use crate::ray::*;
 use crate::intervals::*;
 
 pub struct Camera {
+    pub render_threads: i32,    // Number of worker threads used for rendering
+
     pub aspect_ratio: f64,      // Ratio of image width over height
     pub image_width: i32,       // Rendered image width in pixel count 
     pub samples_per_pixel: i32, // Count of random samples for each pixel
@@ -35,6 +43,8 @@ pub struct Camera {
 impl Camera {
     pub fn defaults() -> Camera {
         Camera { 
+            render_threads: 1,
+
             aspect_ratio: 1.0,
             image_width: 100,
             samples_per_pixel: 10,
@@ -62,23 +72,101 @@ impl Camera {
         }
     }
 
-    pub fn render(&mut self, world: &impl Hittable) {
+    pub fn render_scanline(&self, row: i32, world: Arc<impl Hittable + Send + Sync>) -> Vec<Color> {
+        let mut scanline = vec![];
+        for i in 0..self.image_width{
+            let mut pixel_color = Color::zero();
+            for _sample in 0..self.samples_per_pixel {
+                let r: Ray = self.get_ray(i, row);
+                pixel_color += self.ray_color(&r, self.max_depth, world.clone());
+            }
+             scanline.push(self.pixel_samples_scale * pixel_color);
+        }
+        return scanline;
+    }
+
+    pub fn render<W: Hittable + Send + Sync + 'static>(mut self, world: W) {
         self.initialize();
 
-        println!("P3\n{} {}\n255", self.image_width, self.image_height);
+        let fifo = Arc::new(Mutex::new(VecDeque::new()));
+        let thread_camera = Arc::new(self);
+        let thread_world = Arc::new(world);
+        let mut handles = vec![];
+        let mut recievers = vec![];
+
+        for _ in 0..thread_camera.render_threads {
+            let fifo = Arc::clone(&fifo);
+            let my_cam = Arc::clone(&thread_camera);
+            let my_world = Arc::clone(&thread_world);
+
+            let (tx, rx) = mpsc::channel();
+
+            let handle = thread::spawn(move || {
+                loop {
+                    let mut work_list = fifo.lock().unwrap();
+                    match work_list.pop_front() { 
+                        Some(row) => {
+                            drop(work_list);
+                            let done = my_cam.render_scanline(row, my_world.clone());
+                            match tx.send((done, row)) {
+                               Err(_) => {
+                                   break;
+                               }
+                               _ => {}
+                            }
+                        }
+                        _ => { drop(work_list); }
+                    }
+                }
+            });
+
+            recievers.push(rx);
+            handles.push(handle);
+        }
+
+        for row in 0..thread_camera.image_height {
+            let mut work_list = fifo.lock().unwrap();
+            work_list.push_back(row);
+            drop(work_list)
+        }
+
+        let mut image = vec![vec![Color::zero(); thread_camera.image_width as usize]; thread_camera.image_height as usize];
+
+        let mut done = 0;
+        while done < thread_camera.image_height {
+            eprint!("\rScanlines remaining: {} ", thread_camera.image_height - done);
+            for rx in &recievers {
+                match rx.try_recv() {
+                    Ok((scanline, row)) => {
+                        image[row as usize] = scanline;
+                        done += 1;
+                    }
+                    _ => {}
+                }
+            }
+        }
+        eprint!("\rDone.                            \n");
+        drop(recievers);
+
+        /*
         for j in 0..self.image_height {
-            let scanline = self.image_height - j;
-            eprint!("\rScanlines remaining: {scanline} ");
             for i in 0..self.image_width {
                 let mut pixel_color = Color::zero();
                 for _sample in 0..self.samples_per_pixel {
                     let r: Ray = self.get_ray(i, j);
                     pixel_color += self.ray_color(&r, self.max_depth, world);
                 }
-                write_color(self.pixel_samples_scale * pixel_color);
+                self.image[j as usize][i as usize] = self.pixel_samples_scale * pixel_color;
             }
         }
-        eprint!("\rDone.                            \n");
+        */
+
+        println!("P3\n{} {}\n255", thread_camera.image_width, thread_camera.image_height);
+        for scanline in &image {
+            for pixel in scanline {
+                write_color(&pixel);
+            }
+        }
     }
 
     fn initialize(&mut self) {
@@ -117,6 +205,7 @@ impl Camera {
         let defocus_radius = self.focus_dist * degrees_to_radians(self.defocus_angle / 2.0).tan();
         self.defocus_disk_u = self.u * defocus_radius;
         self.defocus_disk_v = self.v * defocus_radius;
+
     }
 
     fn get_ray(&self, i: i32, j: i32) -> Ray {
@@ -145,7 +234,7 @@ impl Camera {
         self.center + (p[0] * self.defocus_disk_u) + (p[1] * self.defocus_disk_v)
     }
 
-    fn ray_color(&self, r: &Ray, depth: i32, world: &impl Hittable) -> Color {
+    fn ray_color(&self, r: &Ray, depth: i32, world: Arc<impl Hittable + Send + Sync>) -> Color {
         // If we've exceeded the ray bounce limit, no more light is gathered.
         if depth <= 0 {
             return Color::zero();

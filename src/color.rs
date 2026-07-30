@@ -11,7 +11,7 @@ pub fn linear_to_gamma(linear_component: f64) -> f64 {
     }
 }
 
-pub fn write_color(pixel_color: Color) {
+pub fn write_color(pixel_color: &Color) {
     let mut r = pixel_color.x();
     let mut g = pixel_color.y();
     let mut b = pixel_color.z();
