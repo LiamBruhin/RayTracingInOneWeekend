@@ -62,7 +62,7 @@ fn main() {
     // Camera
     let mut cam: Camera = Camera::defaults();
 
-    cam.render_threads = 16;
+    cam.render_threads = 14;
 
     cam.aspect_ratio = 16.0 / 9.0;
     cam.image_width = 400; 

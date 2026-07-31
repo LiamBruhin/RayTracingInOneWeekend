@@ -144,6 +144,7 @@ impl Camera {
                     _ => {}
                 }
             }
+            thread::yield_now();
         }
         eprint!("\rDone.                            \n");
         drop(recievers);
@@ -247,7 +248,7 @@ impl Camera {
             let mut attenuation: Color = Color::zero();
 
             if rec.mat.scatter(r, &rec, &mut attenuation, &mut scattered) {
-                return attenuation * self.ray_color(&scattered, depth-1, world)
+                return attenuation * self.ray_color(&scattered, depth - 1, world)
             } else {
                 return Color::zero();
             }
